@@ -1,0 +1,13 @@
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - web/**
+    - flutterflow/**
+  errors:
+    # Flutter 3.50 marca material.dart como deprecado, pero FlutterFlow todavia lo usa.
+    deprecated_member_use: ignore
+include: package:flutter_lints/flutter.yaml
+linter:
+  rules:
+    use_null_aware_elements: false

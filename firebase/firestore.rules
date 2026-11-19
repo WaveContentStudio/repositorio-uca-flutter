@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// Reglas de Cloud Firestore para Repositorio UCA.
+// Se pegan en Firebase Console > Firestore Database > Reglas.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMe(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Un contador solo puede cambiar de a una unidad (votos, descargas, comentarios).
+    function step(field) {
+      return !(field in request.resource.data.diff(resource.data).affectedKeys())
+        || (request.resource.data[field] - resource.data[field] >= -1
+            && request.resource.data[field] - resource.data[field] <= 1);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isMe(uid)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 60;
+      allow delete: if false;
+
+      match /notifs/{nid} {
+        allow read, update, delete: if isMe(uid);
+        // Cualquier usuario puede avisarle a otro (voto, comentario, descarga).
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['ic', 't', 'ref', 'read', 'createdAt'])
+          && request.resource.data.t is string
+          && request.resource.data.t.size() <= 200;
+      }
+    }
+
+    match /materials/{mid} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 5
+        && request.resource.data.title.size() <= 90
+        && request.resource.data.type in ['Resumen', 'Examen', 'Guía', 'Apunte']
+        && request.resource.data.up == 0
+        && request.resource.data.down == 0
+        && request.resource.data.dl == 0
+        && request.resource.data.nc == 0
+        && request.resource.data.ready == false
+        && request.resource.data.chunks is int
+        && request.resource.data.chunks <= 25;
+
+      allow update: if signedIn() && (
+        // El autor puede corregir los datos del apunte.
+        (resource.data.ownerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['title', 'subject', 'desc', 'tags', 'uploader', 'ready']))
+        ||
+        // Cualquiera puede sumar o restar votos, descargas y comentarios de a uno.
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['up', 'down', 'dl', 'nc'])
+          && step('up') && step('down') && step('dl') && step('nc'))
+      );
+
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+
+      // El archivo va partido en pedazos de hasta ~900 KB (el plan gratis no incluye Storage).
+      match /chunks/{cid} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && get(/databases/$(database)/documents/materials/$(mid)).data.ownerId == request.auth.uid
+          && request.resource.data.d is bytes
+          && request.resource.data.d.size() <= 1000000;
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/materials/$(mid)).data.ownerId == request.auth.uid;
+      }
+
+      match /comments/{cid} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.t is string
+          && request.resource.data.t.size() >= 1
+          && request.resource.data.t.size() <= 280;
+        // Lo borra quien lo escribió, o el autor del apunte cuando borra su aporte.
+        allow delete: if signedIn() && (resource.data.uid == request.auth.uid
+          || get(/databases/$(database)/documents/materials/$(mid)).data.ownerId == request.auth.uid);
+      }
+    }
+
+    match /reports/{rid} {
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+  }
+}
