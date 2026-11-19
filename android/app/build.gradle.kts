@@ -28,6 +28,12 @@ android {
         versionName = flutter.versionName
     }
 
+    // El analizador "lint" de Android se cuelga con algunos plugins al armar el release.
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
