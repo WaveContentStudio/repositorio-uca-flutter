@@ -7,13 +7,21 @@ Reemplaza a la versión HTML + Supabase.
 Trabajo final de Práctica Profesional Interna 2026 — Lic. en Comunicación Digital e Interactiva (UCA).
 Equipo: Nogara, Jerovsek y Yasiulewicz.
 
+## Probala
+
+- **Web:** https://wavecontentstudio.github.io/repositorio-uca-flutter/
+- **Android:** descargá `RepositorioUCA.apk` de la [última versión](https://github.com/WaveContentStudio/repositorio-uca-flutter/releases/latest).
+
+Las dos se arman solas con GitHub Actions cada vez que se sube un cambio a `main`
+(`.github/workflows/apk.yml` y `.github/workflows/pages.yml`).
+
 ## Qué hay en este repositorio
 
 | Archivo | Para qué sirve |
 |---|---|
 | `lib/repositorio_uca_app.dart` | Toda la app (pantallas, lógica y conexión con Firebase) en un solo widget: `RepositorioUcaApp`. |
 | `lib/main.dart` | Arranque del proyecto Flutter normal (fuera de FlutterFlow). |
-| `lib/firebase_options.dart` | Datos del proyecto de Firebase para web. Son públicos por diseño: la seguridad la dan las reglas. |
+| `lib/firebase_options.dart` | Datos del proyecto de Firebase para web y Android. Son públicos por diseño: la seguridad la dan las reglas. |
 | `flutterflow/RepositorioUcaApp.dart` | El mismo código, con el encabezado que pide FlutterFlow para un Custom Widget. |
 | `firebase/firestore.rules` | Reglas de seguridad de la base de datos (se publican desde la consola de Firebase). |
 
@@ -24,7 +32,7 @@ flutter pub get
 flutter run -d chrome
 ```
 
-Para Android o iOS hay que correr `flutterfire configure` para generar los archivos de esas plataformas.
+Web y Android ya están configurados. Para iOS hay que correr `flutterfire configure`.
 
 ## Cómo se guardan los datos en Firebase (plan gratis)
 
